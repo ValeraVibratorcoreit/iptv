@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-    const m3uUrl = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/8902663be76cee4ff12bb4ae60d52439/raw/02f41983b169ed5ebe823407a4aaf7a51f9f253d/gistfile1.txt';
+    const m3uUrl = 'http://139.28.255.188:8080/Pobeda/index.m3u8';
 
     let hls;
     let currentNumberInput = '';

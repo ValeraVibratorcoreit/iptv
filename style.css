@@ -354,11 +354,11 @@ body {
         font-size: 4em;
     }
     .channel-list-panel {
-        width: 350px;
+        width: 400px;
     }
     .channel-list-panel .channel-list li {
-        font-size: 1.2em;
-        padding: 20px 30px;
+        font-size: 1.4em;
+        padding: 25px 35px;
     }
 }
 
