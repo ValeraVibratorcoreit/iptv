@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelListIndicator = document.getElementById('channelListIndicator');
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const muteBtn = document.getElementById('muteBtn');
 
     const m3uUrl = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/8902663be76cee4ff12bb4ae60d52439/raw/02f41983b169ed5ebe823407a4aaf7a51f9f253d/gistfile1.txt';
 
@@ -25,7 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function hideLoadingScreen() {
-        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+        }, 3000); // Задержка 3 секунды
     }
 
     function showLoadingScreen() {
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Hls.Events.MANIFEST_PARSED fired.');
-                video.muted = true;
+                video.muted = false;
                 video.play();
                 hideLoadingScreen();
                 console.log('Calling hideChannelError from MANIFEST_PARSED.');
@@ -131,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             video.addEventListener('loadedmetadata', function() {
                 console.log('Native video loadedmetadata fired.');
-                video.muted = true;
+                video.muted = false;
                 video.play();
                 hideLoadingScreen();
                 console.log('Calling hideChannelError from loadedmetadata.');
@@ -278,24 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newActive.classList.add('active');
             loadChannel(newActive.dataset.url);
             newActive.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            // Устанавливаем статус mute кнопки после переключения канала
-            if (video.muted) {
-                muteBtn.textContent = '🔇';
-            } else {
-                muteBtn.textContent = '🔊';
-            }
         }
     }
-
-    muteBtn.addEventListener('click', () => {
-        video.muted = !video.muted;
-        if (video.muted) {
-            muteBtn.textContent = '🔇';
-        } else {
-            muteBtn.textContent = '🔊';
-        }
-    });
 
     async function checkChannelAvailability(channelUrl, index) {
         const statusIndicator = document.getElementById(`status-${index}`);
