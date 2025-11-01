@@ -44,20 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showChannelError() {
-        console.log('Showing channel error overlay.');
         channelErrorOverlay.classList.remove('hidden');
         hideLoadingScreen();
     }
 
     function hideChannelError() {
-        console.log('Hiding channel error overlay.');
         channelErrorOverlay.classList.add('hidden');
     }
 
     function loadChannel(url) {
         console.log('loadChannel called for URL:', url);
         showLoadingScreen();
-        console.log('Calling hideChannelError from loadChannel (start).');
         hideChannelError();
         if (hls) {
             hls.destroy();
@@ -72,8 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.muted = false;
                 video.play();
                 hideLoadingScreen();
-                console.log('Calling hideChannelError from MANIFEST_PARSED.');
-                hideChannelError();
+                hideChannelError(); // Скрываем ошибку при успешной загрузке
             });
             hls.on(Hls.Events.ERROR, function(event, data) {
                 console.error('HLS.js error:', event, data);
@@ -82,34 +78,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         case Hls.ErrorTypes.NETWORK_ERROR:
                             console.error("fatal network error, try to recover");
                             hls.recoverMediaError();
-                            console.log('Calling showChannelError (NETWORK_ERROR).');
-                            showChannelError();
                             hideLoadingScreen();
+                            // showChannelError(); // Не показываем ошибку, если пытаемся восстановиться
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
                             console.error("fatal media error, try to recover");
                             hls.recoverMediaError();
-                            console.log('Calling showChannelError (MEDIA_ERROR).');
-                            showChannelError();
                             hideLoadingScreen();
+                            // showChannelError(); // Не показываем ошибку, если пытаемся восстановиться
                             break;
                         case Hls.ErrorTypes.OTHER_ERROR:
                             console.error("fatal other error, cannot recover");
                             hls.destroy();
                             hideLoadingScreen();
-                            console.log('Calling showChannelError (OTHER_ERROR).');
-                            showChannelError();
+                            showChannelError(); // Показываем ошибку только при фатальных, невосстанавливаемых ошибках
                             break;
                         default:
                             hls.destroy();
                             hideLoadingScreen();
-                            console.log('Calling showChannelError (HLS default error).');
-                            showChannelError();
+                            showChannelError(); // Показываем ошибку только при фатальных, невосстанавливаемых ошибках
                             break;
                     }
                 } else {
-                    console.log('Calling showChannelError (HLS non-fatal error).');
-                    showChannelError();
+                    // Для нефатальных ошибок не показываем оверлей, просто логируем предупреждение
+                    console.warn('HLS.js non-fatal error:', event, data);
                 }
             });
             hls.on(Hls.Events.BUFFER_APPENDING, function() {
@@ -125,8 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (video.paused || video.currentTime === 0) {
                     console.warn('Video load timeout: Hiding loading screen.');
                     hideLoadingScreen();
-                    console.log('Calling showChannelError from loadTimeout.');
-                    showChannelError();
+                    showChannelError(); // Показываем ошибку для нативного плеера
                 }
             }, 5000);
 
@@ -135,23 +126,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.muted = false;
                 video.play();
                 hideLoadingScreen();
-                console.log('Calling hideChannelError from loadedmetadata.');
-                hideChannelError();
+                hideChannelError(); // Скрываем ошибку при успешной загрузке
                 clearTimeout(loadTimeout);
             }, { once: true });
             video.addEventListener('error', () => {
                 console.error('Native video error: failed to load HLS stream.');
                 hideLoadingScreen();
-                console.log('Calling showChannelError from native video error.');
-                showChannelError();
+                showChannelError(); // Показываем ошибку для нативного плеера
                 clearTimeout(loadTimeout);
             }, { once: true });
             video.addEventListener('stalled', () => {
                 console.warn('Native video stalled.');
                 if (video.paused || video.currentTime === 0) {
                     hideLoadingScreen();
-                    console.log('Calling showChannelError from stalled.');
-                    showChannelError();
+                    showChannelError(); // Если stalled и не играет, возможно, канал нерабочий
                     clearTimeout(loadTimeout);
                 }
             });
@@ -160,8 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             video.addEventListener('playing', () => {
                 console.log('Native video playing fired.');
                 hideLoadingScreen();
-                console.log('Calling hideChannelError from playing.');
-                hideChannelError();
+                hideChannelError(); // Скрываем ошибку при начале воспроизведения
                 clearTimeout(loadTimeout);
             });
         }
@@ -170,18 +157,16 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadM3uPlaylist() {
         console.log('loadM3uPlaylist called.');
         showLoadingScreen();
-        console.log('Calling hideChannelError from loadM3uPlaylist (start).');
-        hideChannelError();
+        hideChannelError(); // Скрываем предыдущие ошибки перед загрузкой плейлиста
         try {
             const response = await fetch(m3uUrl);
             const m3uContent = await response.text();
             availableChannels = parseM3u(m3uContent);
 
             if (availableChannels.length === 0) {
-                // Если parseM3u вернул пустой список, это может быть прямой HLS-поток.
-                // Добавляем его как один канал для воспроизведения.
                 console.warn('Плейлист пуст или имеет некорректный формат. Попытка загрузить как один канал.');
                 availableChannels.push({ name: "Победа", url: m3uUrl });
+                hideChannelError(); // Если добавили один канал вручную, то это не ошибка
             }
 
             renderChannels(availableChannels);
@@ -191,14 +176,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 hideLoadingScreen();
-                console.log('Calling showChannelError from loadM3uPlaylist (no channels).');
-                showChannelError();
+                showChannelError(); // Если каналов нет вообще, это ошибка.
             }
         } catch (error) {
             console.error('Ошибка загрузки или парсинга M3U плейлиста:', error);
             hideLoadingScreen();
-            console.log('Calling showChannelError from loadM3uPlaylist (catch).');
-            showChannelError();
+            showChannelError(); // Если ошибка при загрузке плейлиста, это ошибка
         }
     }
 
@@ -258,13 +241,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function setActiveChannel(index) {
         console.log('setActiveChannel called for index:', index);
         showLoadingScreen();
-        console.log('Calling hideChannelError from setActiveChannel (start).');
-        hideChannelError();
+        hideChannelError(); // Скрываем предыдущие ошибки при переключении канала
         if (index < 0 || index >= availableChannels.length) {
             console.warn('Неверный номер канала:', index + 1);
             hideLoadingScreen();
-            console.log('Calling showChannelError from setActiveChannel (invalid index).');
-            showChannelError();
+            // showChannelError(); // Не показываем ошибку, т.к. это не фатальная ошибка воспроизведения
             return;
         }
 

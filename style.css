@@ -139,8 +139,8 @@ body {
     left: 0;
     height: 100%;
     width: 300px;
-    background-color: rgba(28, 28, 28, 0.7);
-    backdrop-filter: blur(10px);
+    background-color: #1c1c1c;
+    backdrop-filter: none;
     transform: translateX(-100%);
     transition: transform 0.3s ease-in-out, background-color 0.3s ease;
     z-index: 1002;
@@ -254,6 +254,11 @@ body {
     color: #ffffff;
 }
 
+.channel-list-panel .channel-list li:hover {
+    background-color: #4a4a4a;
+    cursor: pointer;
+}
+
 .channel-status-indicator {
     width: 10px;
     height: 10px;
@@ -355,7 +360,7 @@ body {
     }
     .channel-list-panel {
         width: 800px;
-        height: 60vh;
+        height: 100%;
     }
     .channel-list-panel .channel-list li {
         font-size: 2.8em;
@@ -387,7 +392,7 @@ body {
     }
     .channel-list-panel {
         width: 100%;
-        height: 50%;
+        height: 100%;
         padding-top: 10px;
         border-bottom: 1px solid #333;
         border-radius: 0;
@@ -410,7 +415,7 @@ body {
     }
     .channel-list-panel {
         width: 100%;
-        height: 50%;
+        height: 100%;
     }
     .osd {
         font-size: 2.4em;
