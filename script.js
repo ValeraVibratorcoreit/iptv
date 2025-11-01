@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-    const m3uUrl = 'http://139.28.255.188:8080/Pobeda/index.m3u8';
+    const m3uUrl = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/8902663be76cee4ff12bb4ae60d52439/raw/02f41983b169ed5ebe823407a4aaf7a51f9f253d/gistfile1.txt';
 
     let hls;
     let currentNumberInput = '';
@@ -176,6 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(m3uUrl);
             const m3uContent = await response.text();
             availableChannels = parseM3u(m3uContent);
+
+            if (availableChannels.length === 0) {
+                // Если parseM3u вернул пустой список, это может быть прямой HLS-поток.
+                // Добавляем его как один канал для воспроизведения.
+                console.warn('Плейлист пуст или имеет некорректный формат. Попытка загрузить как один канал.');
+                availableChannels.push({ name: "Победа", url: m3uUrl });
+            }
+
             renderChannels(availableChannels);
             if (availableChannels.length > 0) {
                 setActiveChannel(0);
