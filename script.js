@@ -158,6 +158,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function nextChannel() {
+        let newIndex = activeChannelIndex + 1;
+        if (newIndex >= availableChannels.length) {
+            newIndex = 0;
+        }
+        setActiveChannel(newIndex);
+        showOsd(`${newIndex + 1}. ${availableChannels[newIndex].name}`);
+    }
+
+    function previousChannel() {
+        let newIndex = activeChannelIndex - 1;
+        if (newIndex < 0) {
+            newIndex = availableChannels.length - 1;
+        }
+        setActiveChannel(newIndex);
+        showOsd(`${newIndex + 1}. ${availableChannels[newIndex].name}`);
+    }
+
     async function loadM3uPlaylist() {
         console.log('loadM3uPlaylist called.');
         showLoadingScreen();
@@ -353,11 +371,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isFullscreen) {
             if (key === 'ArrowLeft') {
                 event.preventDefault();
-                toggleChannelListVisibility(true);
-            } else if (key === 'ArrowRight') {
                 if (channelListPanel.classList.contains('fullscreen-visible')) {
-                    event.preventDefault();
                     toggleChannelListVisibility(false);
+                } else {
+                    previousChannel();
+                }
+            } else if (key === 'ArrowRight') {
+                event.preventDefault();
+                if (channelListPanel.classList.contains('fullscreen-visible')) {
+                    toggleChannelListVisibility(false);
+                } else {
+                    nextChannel();
                 }
             } else if (key === 'Escape') {
                 if (channelListPanel.classList.contains('fullscreen-visible')) {
@@ -372,14 +396,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleChannelListVisibility(false);
             } else if (key === 'ArrowUp' && channelListPanel.classList.contains('fullscreen-visible')) {
                 event.preventDefault();
-                let newIndex = activeChannelIndex - 1;
-                if (newIndex < 0) newIndex = availableChannels.length - 1;
-                highlightChannel(newIndex);
+                previousChannel();
             } else if (key === 'ArrowDown' && channelListPanel.classList.contains('fullscreen-visible')) {
                 event.preventDefault();
-                let newIndex = activeChannelIndex + 1;
-                if (newIndex >= availableChannels.length) newIndex = 0;
-                highlightChannel(newIndex);
+                nextChannel();
             } else if (key >= '0' && key <= '9') {
                 currentNumberInput += key;
                 showOsd(currentNumberInput);
@@ -399,11 +419,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (key === 'ArrowLeft') {
                 event.preventDefault();
-                toggleChannelListVisibility(true);
-            } else if (key === 'ArrowRight') {
                 if (channelListPanel.classList.contains('visible')) {
-                    event.preventDefault();
                     toggleChannelListVisibility(false);
+                } else {
+                    previousChannel();
+                }
+            } else if (key === 'ArrowRight') {
+                event.preventDefault();
+                if (channelListPanel.classList.contains('visible')) {
+                    toggleChannelListVisibility(false);
+                } else {
+                    nextChannel();
                 }
             } else if (key === 'Escape') {
                 event.preventDefault();
@@ -433,11 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     event.preventDefault();
                     clearTimeout(arrowNavigationTimeout);
                     arrowNavigationTimeout = setTimeout(() => {
-                        let newIndex = activeChannelIndex - 1;
-                        if (newIndex < 0) {
-                            newIndex = availableChannels.length - 1;
-                        }
-                        highlightChannel(newIndex);
+                        previousChannel();
                     }, 200);
                 }
             } else if (key === 'ArrowDown') {
@@ -445,11 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     event.preventDefault();
                     clearTimeout(arrowNavigationTimeout);
                     arrowNavigationTimeout = setTimeout(() => {
-                        let newIndex = activeChannelIndex + 1;
-                        if (newIndex >= availableChannels.length) {
-                            newIndex = 0;
-                        }
-                        highlightChannel(newIndex);
+                        nextChannel();
                     }, 200);
                 }
             }
