@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function nextChannel() {
+        console.log('nextChannel called.');
         let newIndex = activeChannelIndex + 1;
         if (newIndex >= availableChannels.length) {
             newIndex = 0;
@@ -193,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function previousChannel() {
+        console.log('previousChannel called.');
         let newIndex = activeChannelIndex - 1;
         if (newIndex < 0) {
             newIndex = availableChannels.length - 1;
@@ -425,6 +427,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 event.preventDefault();
                 setActiveChannel(activeChannelIndex);
                 toggleChannelListVisibility(false);
+            } else if (key === 'ArrowUp' && channelListPanel.classList.contains('fullscreen-visible')) {
+                event.preventDefault();
+                let newIndex = activeChannelIndex - 1;
+                if (newIndex < 0) newIndex = availableChannels.length - 1;
+                highlightChannel(newIndex);
+            } else if (key === 'ArrowDown' && channelListPanel.classList.contains('fullscreen-visible')) {
+                event.preventDefault();
+                let newIndex = activeChannelIndex + 1;
+                if (newIndex >= availableChannels.length) newIndex = 0;
+                highlightChannel(newIndex);
+            } else if (key === 'ArrowUp' && !channelListPanel.classList.contains('fullscreen-visible')) {
+                event.preventDefault();
+                previousChannel();
+            } else if (key === 'ArrowDown' && !channelListPanel.classList.contains('fullscreen-visible')) {
+                event.preventDefault();
+                nextChannel();
             } else if (key >= '0' && key <= '9') {
                 currentNumberInput += key;
                 showOsd(currentNumberInput);
@@ -482,16 +500,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     event.preventDefault();
                     clearTimeout(arrowNavigationTimeout);
                     arrowNavigationTimeout = setTimeout(() => {
-                        previousChannel();
+                        let newIndex = activeChannelIndex - 1;
+                        if (newIndex < 0) {
+                            newIndex = availableChannels.length - 1;
+                        }
+                        highlightChannel(newIndex);
                     }, 200);
+                } else {
+                    event.preventDefault();
+                    previousChannel();
                 }
             } else if (key === 'ArrowDown') {
                 if (channelListPanel.classList.contains('visible')) {
                     event.preventDefault();
                     clearTimeout(arrowNavigationTimeout);
                     arrowNavigationTimeout = setTimeout(() => {
-                        nextChannel();
+                        let newIndex = activeChannelIndex + 1;
+                        if (newIndex >= availableChannels.length) {
+                            newIndex = 0;
+                        }
+                        highlightChannel(newIndex);
                     }, 200);
+                } else {
+                    event.preventDefault();
+                    nextChannel();
                 }
             }
         }
