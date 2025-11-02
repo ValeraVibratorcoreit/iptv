@@ -67,7 +67,19 @@ document.addEventListener('DOMContentLoaded', () => {
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Hls.Events.MANIFEST_PARSED fired.');
                 video.muted = false;
-                video.play();
+                const playPromise = video.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn('Autoplay prevented with sound. Trying muted play...', error);
+                        video.muted = true;
+                        video.play().catch(mutedError => {
+                            console.error('Muted autoplay also prevented.', mutedError);
+                            hideLoadingScreen();
+                            showChannelError();
+                        });
+                    });
+                }
                 hideLoadingScreen();
                 hideChannelError();
             });
@@ -123,7 +135,19 @@ document.addEventListener('DOMContentLoaded', () => {
             video.addEventListener('loadedmetadata', function() {
                 console.log('Native video loadedmetadata fired.');
                 video.muted = false;
-                video.play();
+                const playPromise = video.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn('Autoplay prevented with sound. Trying muted play...', error);
+                        video.muted = true;
+                        video.play().catch(mutedError => {
+                            console.error('Muted autoplay also prevented.', mutedError);
+                            hideLoadingScreen();
+                            showChannelError();
+                        });
+                    });
+                }
                 hideLoadingScreen();
                 hideChannelError(); // Скрываем ошибку при успешной загрузке
                 clearTimeout(loadTimeout);
@@ -146,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             video.addEventListener('playing', () => {
                 console.log('Native video playing fired.');
+                // No need to handle play promise here, as it's already playing.
                 hideLoadingScreen();
                 hideChannelError(); // Скрываем ошибку при начале воспроизведения
                 clearTimeout(loadTimeout);
@@ -368,20 +393,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (event) => {
         const key = event.key;
 
+        if (key === 'PageUp') {
+            event.preventDefault();
+            nextChannel();
+        } else if (key === 'PageDown') {
+            event.preventDefault();
+            previousChannel();
+        }
+
         if (isFullscreen) {
             if (key === 'ArrowLeft') {
                 event.preventDefault();
                 if (channelListPanel.classList.contains('fullscreen-visible')) {
                     toggleChannelListVisibility(false);
                 } else {
-                    previousChannel();
+                    toggleChannelListVisibility(true);
                 }
             } else if (key === 'ArrowRight') {
                 event.preventDefault();
                 if (channelListPanel.classList.contains('fullscreen-visible')) {
                     toggleChannelListVisibility(false);
-                } else {
-                    nextChannel();
                 }
             } else if (key === 'Escape') {
                 if (channelListPanel.classList.contains('fullscreen-visible')) {
@@ -394,12 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 event.preventDefault();
                 setActiveChannel(activeChannelIndex);
                 toggleChannelListVisibility(false);
-            } else if (key === 'ArrowUp' && channelListPanel.classList.contains('fullscreen-visible')) {
-                event.preventDefault();
-                previousChannel();
-            } else if (key === 'ArrowDown' && channelListPanel.classList.contains('fullscreen-visible')) {
-                event.preventDefault();
-                nextChannel();
             } else if (key >= '0' && key <= '9') {
                 currentNumberInput += key;
                 showOsd(currentNumberInput);
@@ -422,14 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (channelListPanel.classList.contains('visible')) {
                     toggleChannelListVisibility(false);
                 } else {
-                    previousChannel();
+                    toggleChannelListVisibility(true);
                 }
             } else if (key === 'ArrowRight') {
                 event.preventDefault();
                 if (channelListPanel.classList.contains('visible')) {
                     toggleChannelListVisibility(false);
-                } else {
-                    nextChannel();
                 }
             } else if (key === 'Escape') {
                 event.preventDefault();
