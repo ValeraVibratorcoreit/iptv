@@ -60,9 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hls.destroy();
         }
 
+        // Используем прокси для всех запросов к каналу
+        const proxiedUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        console.log('Loading channel via proxy:', proxiedUrl);
+
         if (Hls.isSupported()) {
             hls = new Hls();
-            hls.loadSource(url);
+            hls.loadSource(proxiedUrl); // Используем proxiedUrl
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Hls.Events.MANIFEST_PARSED fired.');
@@ -123,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url;
+            video.src = proxiedUrl; // Используем proxiedUrl
             let loadTimeout = setTimeout(() => {
                 if (video.paused || video.currentTime === 0) {
                     console.warn('Video load timeout: Hiding loading screen.');
