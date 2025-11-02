@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         showOsd('Некорректный номер');
                     }
                     currentNumberInput = '';
-                }, 800);
+                }, 2000);
             }
         } else {
             if (key === 'ArrowLeft') {
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         showOsd('Некорректный номер');
                     }
                     currentNumberInput = '';
-                }, 800);
+                }, 2000);
             } else if (key === 'Enter') {
                 if (channelListPanel.classList.contains('visible')) {
                     setActiveChannel(activeChannelIndex);
@@ -530,13 +530,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadM3uPlaylist();
-
-    function startPlaylistAutoUpdate() {
-        setInterval(() => {
-            console.log('Автоматическое обновление плейлиста...');
-            loadM3uPlaylist();
-        }, 5 * 60 * 1000); // Обновлять каждые 5 минут
-    }
-
-    startPlaylistAutoUpdate();
 });
