@@ -69,39 +69,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.muted = false;
                 video.play();
                 hideLoadingScreen();
-                hideChannelError(); // Скрываем ошибку при успешной загрузке
+                hideChannelError();
             });
             hls.on(Hls.Events.ERROR, function(event, data) {
-                console.error('HLS.js error:', event, data);
+                console.error('HLS.js error details:', event, data);
                 if (data.fatal) {
+                    console.error(`HLS.js fatal error type: ${data.type}, details:`, data);
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error("fatal network error, try to recover");
+                            console.error("Fatal network error, trying to recover...");
                             hls.recoverMediaError();
                             hideLoadingScreen();
-                            // showChannelError(); // Не показываем ошибку, если пытаемся восстановиться
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error("fatal media error, try to recover");
+                            console.error("Fatal media error, trying to recover...");
                             hls.recoverMediaError();
                             hideLoadingScreen();
-                            // showChannelError(); // Не показываем ошибку, если пытаемся восстановиться
                             break;
                         case Hls.ErrorTypes.OTHER_ERROR:
-                            console.error("fatal other error, cannot recover");
+                            console.error("Fatal other error, cannot recover.");
                             hls.destroy();
                             hideLoadingScreen();
-                            showChannelError(); // Показываем ошибку только при фатальных, невосстанавливаемых ошибках
+                            showChannelError();
                             break;
                         default:
+                            console.error("Unknown fatal HLS.js error, destroying HLS instance.");
                             hls.destroy();
                             hideLoadingScreen();
-                            showChannelError(); // Показываем ошибку только при фатальных, невосстанавливаемых ошибках
+                            showChannelError();
                             break;
                     }
                 } else {
-                    // Для нефатальных ошибок не показываем оверлей, просто логируем предупреждение
-                    console.warn('HLS.js non-fatal error:', event, data);
+                    console.warn(`HLS.js non-fatal error type: ${data.type}, details:`, data);
                 }
             });
             hls.on(Hls.Events.BUFFER_APPENDING, function() {
@@ -129,17 +128,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideChannelError(); // Скрываем ошибку при успешной загрузке
                 clearTimeout(loadTimeout);
             }, { once: true });
-            video.addEventListener('error', () => {
-                console.error('Native video error: failed to load HLS stream.');
+            video.addEventListener('error', (event) => {
+                console.error('Native video error: failed to load HLS stream.', event);
                 hideLoadingScreen();
-                showChannelError(); // Показываем ошибку для нативного плеера
+                showChannelError();
                 clearTimeout(loadTimeout);
             }, { once: true });
             video.addEventListener('stalled', () => {
                 console.warn('Native video stalled.');
                 if (video.paused || video.currentTime === 0) {
                     hideLoadingScreen();
-                    showChannelError(); // Если stalled и не играет, возможно, канал нерабочий
+                    showChannelError();
                     clearTimeout(loadTimeout);
                 }
             });
@@ -151,6 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideChannelError(); // Скрываем ошибку при начале воспроизведения
                 clearTimeout(loadTimeout);
             });
+        } else {
+            // Fallback for browsers that don't support HLS.js
+            console.error('HLS.js is not supported in this browser, and native HLS playback also failed.');
+            hideLoadingScreen();
+            showChannelError();
         }
     }
 
@@ -453,4 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadM3uPlaylist();
+
+    function startPlaylistAutoUpdate() {
+        setInterval(() => {
+            console.log('Автоматическое обновление плейлиста...');
+            loadM3uPlaylist();
+        }, 5 * 60 * 1000); // Обновлять каждые 5 минут
+    }
+
+    startPlaylistAutoUpdate();
 });
