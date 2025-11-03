@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-    const PROXY_SERVER_URL = 'https://147.45.215.206/proxy/'; // URL вашего CORS прокси-сервера
+    const PROXY_SERVER_URL = 'https://valeravibrator.space/proxy/';
     const m3uUrl = `${PROXY_SERVER_URL}https://gist.githubusercontent.com/ValeraVibratorcoreit/b5f0ffdd7372830503215c0f365ab682/raw/92d2f2cd1c6899eb391dcc806d680c3382498809/gistfile1.txt`;
 
     let hls;
