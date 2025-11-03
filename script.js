@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-    const m3uUrl = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/b5f0ffdd7372830503215c0f365ab682/raw/92d2f2cd1c6899eb391dcc806d680c3382498809/gistfile1.txt';
+    const PROXY_SERVER_URL = 'http://147.45.215.206:8080/proxy/'; // URL вашего CORS прокси-сервера
+    const m3uUrl = `${PROXY_SERVER_URL}https://gist.githubusercontent.com/ValeraVibratorcoreit/b5f0ffdd7372830503215c0f365ab682/raw/92d2f2cd1c6899eb391dcc806d680c3382498809/gistfile1.txt`;
 
     let hls;
     let currentNumberInput = '';
@@ -60,9 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
             hls.destroy();
         }
 
+        // Если URL канала уже содержит PROXY_SERVER_URL, не добавляем его снова.
+        // Иначе, добавляем прокси перед URL канала.
+        const proxiedUrl = url.startsWith(PROXY_SERVER_URL) ? url : `${PROXY_SERVER_URL}${url}`;
+
         if (Hls.isSupported()) {
             hls = new Hls();
-            hls.loadSource(url);
+            hls.loadSource(proxiedUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Hls.Events.MANIFEST_PARSED fired.');
@@ -319,8 +324,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicator.classList.remove('online', 'offline');
         statusIndicator.classList.add('checking');
 
+        // Если URL канала уже содержит PROXY_SERVER_URL, не добавляем его снова.
+        // Иначе, добавляем прокси перед URL канала.
+        const proxiedChannelUrl = channelUrl.startsWith(PROXY_SERVER_URL) ? channelUrl : `${PROXY_SERVER_URL}${channelUrl}`;
+
         try {
-            const response = await fetch(channelUrl, { method: 'GET', mode: 'no-cors' });
+            const response = await fetch(proxiedChannelUrl);
             if (response.type === 'opaque' || response.ok) {
                 statusIndicator.classList.remove('checking');
                 statusIndicator.classList.add('online');
