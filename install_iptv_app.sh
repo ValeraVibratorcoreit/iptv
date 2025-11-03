@@ -5,7 +5,7 @@
 # URL для вашего IPK файла
 IPK_DOWNLOAD_URL="https://github.com/ValeraVibratorcoreit/iptv/blob/main/com.valeravibrator.iptv_1.0.0_all.ipk"
 # URL для этого скрипта (если вы хотите, чтобы другие его скачивали напрямую)
-SCRIPT_DOWNLOAD_URL="https://your-domain.com/path/to/install_iptv_app.sh"
+SCRIPT_DOWNLOAD_URL="https://github.com/ValeraVibratorcoreit/iptv/blob/main/install_iptv_app.sh"
 
 DEVICE_NAME="mytv" # Имя устройства, которое вы зарегистрировали через ares-setup-device. Измените, если ваше устройство называется по-другому.
 IPK_FILENAME="com.valeravibrator.iptv_1.0.0_all.ipk"
@@ -68,4 +68,5 @@ rm "${IPK_FILENAME}"
 
 echo "==================================================="
 echo "         Установка завершена! Наслаждайтесь!       "
+
 echo "==================================================="
