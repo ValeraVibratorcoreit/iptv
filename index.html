@@ -20,7 +20,8 @@
             <div id="channelListIndicator" class="channel-list-indicator">&#9664;</div>
 
             <div class="player-controls">
-                <button id="fullscreenBtn" class="control-btn">⤢</button>
+                <button id="fullscreenBtn" class="control-btn">⤢</button> <!-- Возвращаем кнопку полноэкранного режима -->
+                <a href="admin.html" class="control-btn admin-btn">&#9881;</a> <!-- Шестеренка для админки -->
             </div>
 
             <div id="loadingScreen" class="loading-screen">
@@ -29,6 +30,20 @@
                     <div class="loading-bar-container">
                         <div class="loading-bar"></div>
                     </div>
+                    <div id="channelCheckLogDisplay" style="
+                        margin: 20px auto 0 auto; /* Центрируем и добавляем верхний отступ */
+                        font-size: 14px;
+                        color: #a0a0a0;
+                        max-height: 150px;
+                        overflow: hidden; /* Скрываем полосу прокрутки */
+                        white-space: pre-wrap;
+                        word-break: break-all;
+                        padding: 10px;
+                        background-color: rgba(0, 0, 0, 0.3);
+                        border-radius: 5px;
+                        width: 80%;
+                        text-align: left;
+                    "></div>
                 </div>
             </div>
 

@@ -99,6 +99,7 @@ body {
     width: 100%;
     height: 100%;
     display: block;
+    vertical-align: top; /* Убирает лишний пробел под видео */
 }
 
 .player-controls {
@@ -122,11 +123,20 @@ body {
     font-size: 1.2em;
     cursor: pointer;
     border-radius: 5px;
+    margin-left: 10px;
     transition: background-color 0.3s ease;
+    text-decoration: none; /* Для ссылки */
+    display: flex; /* Для центрирования иконки */
+    align-items: center;
+    justify-content: center;
 }
 
 .control-btn:hover {
     background-color: rgba(0, 0, 0, 0.7);
+}
+
+.admin-btn {
+    font-size: 1.5em; /* Делаем иконку шестеренки чуть больше */
 }
 
 .volume-slider {
@@ -149,6 +159,7 @@ body {
     overflow-y: auto;
     border-right: 1px solid #333;
     border-radius: 0 12px 12px 0;
+    box-sizing: border-box; /* Добавляем для правильного расчета высоты с padding */
 }
 
 .channel-list-panel.visible {

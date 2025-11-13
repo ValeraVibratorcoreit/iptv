@@ -7,9 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelListIndicator = document.getElementById('channelListIndicator');
     const channelErrorOverlay = document.getElementById('channelErrorOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const channelCheckLogDisplay = document.getElementById('channelCheckLogDisplay'); // Новый элемент для логов
 
-    const PROXY_SERVER_URL = 'https://valeravibrator.space/proxy/';
-    const m3uUrl = `${PROXY_SERVER_URL}https://gist.githubusercontent.com/ValeraVibratorcoreit/b5f0ffdd7372830503215c0f365ab682/raw/92d2f2cd1c6899eb391dcc806d680c3382498809/gistfile1.txt`;
+    const PROXY_SERVER_URL = '/proxy/'; // Обновленный URL для Flask Proxy
+    const API_BASE_URL = 'https://iptv.valeravibrator.space/api'; // Обновленный URL для Flask API на HTTPS
 
     let hls;
     let currentNumberInput = '';
@@ -19,9 +20,34 @@ document.addEventListener('DOMContentLoaded', () => {
     let availableChannels = [];
     let activeChannelIndex = 0;
     let isFullscreen = false;
+    let isInitialLoad = true; // Флаг для первой загрузки
+    let channelsToCheckCount = 0; // Счетчик для проверки доступности каналов
 
     video.addEventListener('pause', () => {
         console.warn('Video paused unexpectedly. Current time:', video.currentTime, 'readyState:', video.readyState);
+    });
+
+    // Restore fullscreen button event listener
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.getElementById('mainContainer').requestFullscreen().catch(err => {
+                console.error("Ошибка при попытке перехода в полноэкранный режим:", err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        isFullscreen = !!document.fullscreenElement;
+        if (isFullscreen) {
+            toggleChannelListVisibility(false);
+        } else {
+            if (window.innerWidth > 768) {
+                toggleChannelListVisibility(false);
+            }
+            channelListIndicator.style.display = 'none';
+        }
     });
 
     function hideLoadingScreen() {
@@ -53,8 +79,23 @@ document.addEventListener('DOMContentLoaded', () => {
         channelErrorOverlay.classList.add('hidden');
     }
 
-    function loadChannel(url) {
-        console.log('loadChannel called for URL:', url);
+    // Функция для логирования проверок каналов на загрузочном экране
+    function logChannelCheck(message, isError = false) {
+        if (channelCheckLogDisplay && isInitialLoad) { // Логируем только при первой загрузке
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (isError) {
+                logEntry.style.color = '#ff6b6b'; // Красный цвет для ошибок
+            } else {
+                logEntry.style.color = '#a0a0a0'; // Серый цвет для обычных сообщений
+            }
+            channelCheckLogDisplay.appendChild(logEntry);
+            channelCheckLogDisplay.scrollTop = channelCheckLogDisplay.scrollHeight; // Прокрутка вниз
+        }
+    }
+
+    function loadChannel(url, userAgent = null) {
+        console.log('loadChannel called for URL:', url, 'with User-Agent:', userAgent);
         showLoadingScreen();
         hideChannelError();
         if (hls) {
@@ -67,6 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (Hls.isSupported()) {
             hls = new Hls();
+            // Add custom header for User-Agent if provided
+            if (userAgent) {
+                hls.config.pLoader = Hls.DefaultConfig.loader;
+                hls.config.xhrSetup = function (xhr, url) {
+                    if (url.startsWith(PROXY_SERVER_URL)) {
+                        xhr.setRequestHeader('X-Proxy-User-Agent', userAgent);
+                    }
+                };
+            }
             hls.loadSource(proxiedUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
@@ -208,34 +258,106 @@ document.addEventListener('DOMContentLoaded', () => {
         showOsd(`${newIndex + 1}. ${availableChannels[newIndex].name}`);
     }
 
-    async function loadM3uPlaylist() {
-        console.log('loadM3uPlaylist called.');
+    async function loadM3uPlaylist(channelIdToRestore = null) {
+        console.log('loadM3uPlaylist called. Restoring channel ID:', channelIdToRestore);
         showLoadingScreen();
         hideChannelError(); // Скрываем предыдущие ошибки перед загрузкой плейлиста
-        try {
-            const response = await fetch(m3uUrl);
-            const m3uContent = await response.text();
-            availableChannels = parseM3u(m3uContent);
+        
+        // При новой загрузке плейлиста сбрасываем флаг и показываем контейнер логов
+        isInitialLoad = true;
+        if (channelCheckLogDisplay) {
+            channelCheckLogDisplay.innerHTML = ''; // Очистка логов при новой загрузке плейлиста
+            channelCheckLogDisplay.classList.remove('hidden'); // Показываем контейнер логов
+        }
+        logChannelCheck('Загрузка списка каналов с бэкенда...');
 
-            if (availableChannels.length === 0) {
-                console.warn('Плейлист пуст или имеет некорректный формат. Попытка загрузить как один канал.');
-                availableChannels.push({ name: "Победа", url: m3uUrl });
-                hideChannelError(); // Если добавили один канал вручную, то это не ошибка
+        try {
+            const response = await fetch(`${API_BASE_URL}/channels`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const newChannels = await response.json();
+            console.log('Каналы загружены с бэкенда.', newChannels);
+
+            if (newChannels.length === 0) {
+                console.warn('Список каналов пуст. Пожалуйста, добавьте каналы через админ-панель.');
+                availableChannels = [];
+                renderChannels([]);
+                hideLoadingScreen();
+                showChannelError();
+                logChannelCheck('Список каналов пуст. Добавьте каналы через админ-панель.', true);
+                isInitialLoad = false; // Первая загрузка завершена
+                if (channelCheckLogDisplay) {
+                    channelCheckLogDisplay.innerHTML = '';
+                    channelCheckLogDisplay.classList.add('hidden'); // Скрываем контейнер логов и здесь
+                }
+                return;
             }
 
+            availableChannels = newChannels; // Update the global availableChannels
             renderChannels(availableChannels);
-            if (availableChannels.length > 0) {
-                setActiveChannel(0);
-                checkAllChannelsAvailability();
 
+            let targetIndex = 0;
+            let shouldReloadStream = true;
+
+            if (channelIdToRestore) {
+                const oldActiveChannel = availableChannels[activeChannelIndex];
+                targetIndex = availableChannels.findIndex(c => c.id === channelIdToRestore);
+                
+                if (targetIndex !== -1) {
+                    // If the restored channel is found and its URL is the same, no need to force reload
+                    if (oldActiveChannel && oldActiveChannel.id === channelIdToRestore && oldActiveChannel.url === availableChannels[targetIndex].url) {
+                        shouldReloadStream = false;
+                        console.log('Restoring existing channel without stream reload.');
+                    }
+                    console.log('Restoring previously active channel at index:', targetIndex);
+                } else {
+                    console.log('Previously active channel not found after update. Switching to first channel.');
+                    targetIndex = 0; // Fallback to first channel if old one is deleted
+                }
+            } else if (availableChannels.length > 0) {
+                targetIndex = 0; // Default to first channel if no specific channel to restore
+            }
+
+            if (availableChannels.length > 0) {
+                setActiveChannel(targetIndex, shouldReloadStream);
+                logChannelCheck('Начало проверки доступности всех каналов...');
+                
+                // Инициализируем счетчик каналов для проверки (все, кроме активного)
+                channelsToCheckCount = availableChannels.length - 1;
+                if (channelsToCheckCount <= 0) {
+                    // Если только один канал или нет других для проверки, скрываем загрузочный экран сразу
+                    setTimeout(() => {
+                        hideLoadingScreen();
+                        isInitialLoad = false;
+                        if (channelCheckLogDisplay) {
+                            channelCheckLogDisplay.innerHTML = ''; // Очищаем логи
+                            channelCheckLogDisplay.classList.add('hidden'); // Скрываем контейнер логов
+                        }
+                    }, 1000); // Небольшая задержка, чтобы пользователь увидел сообщение
+                } else {
+                    checkAllChannelsAvailability();
+                }
             } else {
                 hideLoadingScreen();
                 showChannelError(); // Если каналов нет вообще, это ошибка.
+                logChannelCheck('Список каналов пуст. Добавьте каналы через админ-панель.', true);
+                isInitialLoad = false; // Первая загрузка завершена
+                if (channelCheckLogDisplay) {
+                    channelCheckLogDisplay.innerHTML = '';
+                    channelCheckLogDisplay.classList.add('hidden'); // Скрываем контейнер логов и здесь
+                }
             }
         } catch (error) {
-            console.error('Ошибка загрузки или парсинга M3U плейлиста:', error);
+            console.error('Ошибка загрузки каналов с бэкенда:', error);
             hideLoadingScreen();
             showChannelError(); // Если ошибка при загрузке плейлиста, это ошибка
+            logChannelCheck(`Критическая ошибка загрузки плейлиста: ${error.message}`, true);
+            isInitialLoad = false; // Первая загрузка завершена
+            if (channelCheckLogDisplay) {
+                channelCheckLogDisplay.innerHTML = '';
+                channelCheckLogDisplay.classList.add('hidden'); // Скрываем контейнер логов и здесь
+            }
         }
     }
 
@@ -292,15 +414,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setActiveChannel(index) {
-        console.log('setActiveChannel called for index:', index);
+    function setActiveChannel(index, forceReload = true) {
+        console.log('setActiveChannel called for index:', index, 'forceReload:', forceReload);
         showLoadingScreen();
         hideChannelError(); // Скрываем предыдущие ошибки при переключении канала
         if (index < 0 || index >= availableChannels.length) {
             console.warn('Неверный номер канала:', index + 1);
             hideLoadingScreen();
-            // showChannelError(); // Не показываем ошибку, т.к. это не фатальная ошибка воспроизведения
             return;
+        }
+
+        if (activeChannelIndex === index && !forceReload) {
+            console.log('Already on active channel and no force reload. Skipping.');
+            hideLoadingScreen();
+            return; // Already playing the same channel, no need to reload
         }
 
         activeChannelIndex = index;
@@ -312,7 +439,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const newActive = channelList.children[index];
         if (newActive) {
             newActive.classList.add('active');
-            loadChannel(newActive.dataset.url);
+            logChannelCheck(`Загрузка канала: ${availableChannels[index].name} (${index + 1})`);
+            loadChannel(newActive.dataset.url, availableChannels[index].user_agent);
             newActive.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
@@ -324,24 +452,63 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicator.classList.remove('online', 'offline');
         statusIndicator.classList.add('checking');
 
+        logChannelCheck(`Проверка доступности канала ${availableChannels[index].name} (${index + 1})...`);
+
         // Если URL канала уже содержит PROXY_SERVER_URL, не добавляем его снова.
         // Иначе, добавляем прокси перед URL канала.
         const proxiedChannelUrl = channelUrl.startsWith(PROXY_SERVER_URL) ? channelUrl : `${PROXY_SERVER_URL}${channelUrl}`;
 
         try {
-            const response = await fetch(proxiedChannelUrl);
+            const fetchOptions = {};
+            const channel = availableChannels[index];
+            if (channel && channel.user_agent) {
+                fetchOptions.headers = {
+                    'X-Proxy-User-Agent': channel.user_agent
+                };
+            }
+            const response = await fetch(proxiedChannelUrl, fetchOptions);
             if (response.type === 'opaque' || response.ok) {
                 statusIndicator.classList.remove('checking');
                 statusIndicator.classList.add('online');
+                logChannelCheck(`Канал ${availableChannels[index].name} (${index + 1}) доступен.`);
+            } else if (response.status === 502) {
+                // Handle detailed proxy errors
+                const errorData = await response.json();
+                statusIndicator.classList.remove('checking');
+                statusIndicator.classList.add('offline');
+                const errorMessage = `Ошибка прокси при проверке канала ${availableChannels[index].name} (${index + 1}): ${errorData.message} (Цель: ${errorData.target})`;
+                console.error(errorMessage);
+                logChannelCheck(errorMessage, true);
             } else {
                 statusIndicator.classList.remove('checking');
                 statusIndicator.classList.add('offline');
-                console.warn(`Канал ${index + 1} (${channelUrl}) недоступен. Статус: ${response.status} (или opaque response)`);
+                const errorMessage = `Канал ${availableChannels[index].name} (${index + 1}) недоступен. Статус: ${response.status}.`;
+                console.warn(errorMessage);
+                logChannelCheck(errorMessage, true);
             }
         } catch (error) {
             statusIndicator.classList.remove('checking');
             statusIndicator.classList.add('offline');
-            console.error(`Ошибка при проверке канала ${index + 1} (${channelUrl}):`, error);
+            const errorMessage = `Ошибка при проверке канала ${availableChannels[index].name} (${index + 1}): ${error.message}`;
+            console.error(errorMessage);
+            logChannelCheck(errorMessage, true);
+        } finally {
+            // Уменьшаем счетчик после завершения проверки (успех или ошибка)
+            if (index !== activeChannelIndex) { // Учитываем только те каналы, которые активно проверяются
+                channelsToCheckCount--;
+            }
+
+            // Если все проверки завершены и это первая загрузка, скрываем экран загрузки
+            if (channelsToCheckCount <= 0 && isInitialLoad) {
+                setTimeout(() => {
+                    hideLoadingScreen();
+                    isInitialLoad = false; // Сбрасываем флаг
+                    if (channelCheckLogDisplay) {
+                        channelCheckLogDisplay.innerHTML = ''; // Очищаем логи
+                        channelCheckLogDisplay.classList.add('hidden'); // Скрываем контейнер логов
+                    }
+                }, 1000); // Небольшая задержка, чтобы пользователь мог увидеть финальные логи
+            }
         }
     }
 
@@ -378,28 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
             channelListIndicator.style.display = 'none';
         }
     }
-
-    fullscreenBtn.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-            document.getElementById('mainContainer').requestFullscreen().catch(err => {
-                console.error("Ошибка при попытке перехода в полноэкранный режим:", err);
-            });
-        } else {
-            document.exitFullscreen();
-        }
-    });
-
-    document.addEventListener('fullscreenchange', () => {
-        isFullscreen = !!document.fullscreenElement;
-        if (isFullscreen) {
-            toggleChannelListVisibility(false);
-        } else {
-            if (window.innerWidth > 768) {
-                toggleChannelListVisibility(false);
-            }
-            channelListIndicator.style.display = 'none';
-        }
-    });
 
     document.addEventListener('keydown', (event) => {
         const key = event.key;
@@ -539,4 +684,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadM3uPlaylist();
+
+    // Remove automatic fullscreen request
+    // document.getElementById('mainContainer').requestFullscreen().catch(err => {
+    //     console.error("Ошибка при попытке автоматического перехода в полноэкранный режим:", err);
+    // });
+
+    // Ensure video is muted for autoplay to work initially
+    video.muted = true;
+    // You might want to provide a UI element to unmute the video
+
+    // Listen for changes in localStorage from admin page
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'channelsUpdatedTimestamp') {
+            console.log('Channels updated in admin page. Reloading channels...');
+            const currentPlayingChannelId = availableChannels.length > 0 && activeChannelIndex !== -1
+                ? availableChannels[activeChannelIndex].id
+                : null;
+            
+            loadM3uPlaylist(currentPlayingChannelId);
+        }
+    });
 });
