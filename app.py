@@ -10,7 +10,7 @@ app = Flask(__name__, static_folder='.', static_url_path='/')
 CORS(app) # Enable CORS for all routes
 
 CHANNELS_FILE = 'channels.json'
-FALLBACK_M3U_URL = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/b5f0ffdd7372830503215c0f365ab682/raw/92d2f2cd1c6899eb391dcc806d680c3382498809/gistfile1.txt'
+FALLBACK_M3U_URL = 'https://gist.githubusercontent.com/ValeraVibratorcoreit/44e5d9537a5289dc57a81b9c5ca46af3/raw/6ac7d779d850da5deb2e83770e69c3d68e11cbbe/gistfile1.txt'
 PROXY_SERVER_URL = 'https://valeravibrator.space/proxy/'
 
 def load_channels():
